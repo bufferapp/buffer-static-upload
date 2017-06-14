@@ -22,7 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
-var defaultS3Bucket string = "static.buffer.com"
+var defaultS3Bucket = "static.buffer.com"
 
 // GetFileMd5 returns a checksum for a given file
 func GetFileMd5(file *os.File) (string, error) {
