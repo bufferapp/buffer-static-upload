@@ -120,13 +120,16 @@ func VersionAndUploadFiles(
 		}
 		defer file.Close()
 
-		checksum, err := GetFileMd5(file)
-		if err != nil {
-			return fileVersions, err
+		ext := filepath.Ext(filename)
+		uploadFilename := filename
+		if ext == ".js" || ext == ".css" {
+			checksum, errMd5 := GetFileMd5(file)
+			if errMd5 != nil {
+				return fileVersions, errMd5
+			}
+			uploadFilename = GetVersionedFilename(filename, checksum)
 		}
-
-		versionedFilename := GetVersionedFilename(filename, checksum)
-		bucketFilename := path.Join(directory, versionedFilename)
+		bucketFilename := path.Join(directory, uploadFilename)
 		mimeType := GetFileMimeType(filename)
 
 		result, err := uploader.Upload(&s3manager.UploadInput{
