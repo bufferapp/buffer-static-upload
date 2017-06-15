@@ -19,10 +19,13 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 var defaultS3Bucket = "static.buffer.com"
+var uploader *s3manager.Uploader
+var svc *s3.S3
 
 func fatal(format string, a ...interface{}) {
 	s := "Error: " + format + "\n"
@@ -76,10 +79,8 @@ func GetFilesFromGlobsList(globList string) ([]string, error) {
 	return files, nil
 }
 
-// GetS3Uploader returns a configured Uploader
-func GetS3Uploader() (*s3manager.Uploader, error) {
-	var uploader *s3manager.Uploader
-
+// SetupS3Uploader configures and assigns the global "uploader" and "svc" variables
+func SetupS3Uploader() {
 	awsAccessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
 	awsSecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
 
@@ -89,14 +90,63 @@ func GetS3Uploader() (*s3manager.Uploader, error) {
 		Credentials: creds,
 		Region:      aws.String(endpoints.UsEast1RegionID),
 	}))
-
 	_, err := creds.Get()
 	if err != nil {
 		fatal("failed to load AWS credentials %s", err)
 	}
 
 	uploader = s3manager.NewUploader(sess)
-	return uploader, nil
+	svc = s3.New(sess)
+}
+
+// HasPreviousUpload performs a HEAD request to check if a file has been uploaded already
+func HasPreviousUpload(svc *s3.S3, bucket string, filename string) bool {
+	req, _ := svc.HeadObjectRequest(&s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(filename),
+	})
+	err := req.Send()
+	if err == nil {
+		return true
+	}
+	return false
+}
+
+// GetFileURL returns the final url of the file
+func GetFileURL(filename string, bucket string) string {
+	// the static.buffer.com bucket has a domain alias
+	if bucket == defaultS3Bucket {
+		return "https://" + path.Join(bucket, filename)
+	}
+	return "https://s3.amazonaws.com" + path.Join("/", filename)
+}
+
+// UploadFile ensures a given file is uploaded to the s3 bucket and returns
+// the filename
+func UploadFile(file *os.File, filename string, bucket string) (fileURL string, err error) {
+	mimeType := GetFileMimeType(filename)
+
+	var action string
+	if !HasPreviousUpload(svc, bucket, filename) {
+		_, err := uploader.Upload(&s3manager.UploadInput{
+			Bucket:       aws.String(bucket),
+			Key:          aws.String(filename),
+			ContentType:  aws.String(mimeType),
+			CacheControl: aws.String("public, max-age=31520626"),
+			Expires:      aws.Time(time.Now().AddDate(10, 0, 0)),
+			Body:         file,
+		})
+		if err != nil {
+			return fileURL, err
+		}
+		action = "Uploaded"
+	} else {
+		action = "Skipped"
+	}
+
+	fileURL = GetFileURL(filename, bucket)
+	fmt.Printf("%-10s %s\n", action, fileURL)
+	return fileURL, nil
 }
 
 // VersionAndUploadFiles will verion files and upload them to s3 and return
@@ -107,11 +157,6 @@ func VersionAndUploadFiles(
 	filenames []string,
 ) (map[string]string, error) {
 	fileVersions := map[string]string{}
-
-	uploader, err := GetS3Uploader()
-	if err != nil {
-		return fileVersions, err
-	}
 
 	for _, filename := range filenames {
 		file, err := os.Open(filename)
@@ -130,27 +175,12 @@ func VersionAndUploadFiles(
 			uploadFilename = GetVersionedFilename(filename, checksum)
 		}
 		bucketFilename := path.Join(directory, uploadFilename)
-		mimeType := GetFileMimeType(filename)
 
-		result, err := uploader.Upload(&s3manager.UploadInput{
-			Bucket:       aws.String(bucket),
-			Key:          aws.String(bucketFilename),
-			ContentType:  aws.String(mimeType),
-			CacheControl: aws.String("public, max-age=31520626"),
-			Expires:      aws.Time(time.Now().AddDate(10, 0, 0)),
-			Body:         file,
-		})
+		fileURL, err := UploadFile(file, bucketFilename, bucket)
 		if err != nil {
 			return fileVersions, err
 		}
-
-		// the static.buffer.com bucket has a domain alias
-		if bucket == defaultS3Bucket {
-			fileVersions[filename] = "https://" + path.Join(bucket, bucketFilename)
-		} else {
-			fileVersions[filename] = result.Location
-		}
-		fmt.Printf("Uploaded %s\n", fileVersions[filename])
+		fileVersions[filename] = fileURL
 	}
 
 	return fileVersions, nil
@@ -173,6 +203,7 @@ func main() {
 	}
 	fmt.Printf("Found %d files to upload and version:\n", len(files))
 
+	SetupS3Uploader()
 	fileVersions, err := VersionAndUploadFiles(*s3Bucket, *directory, files)
 	if err != nil {
 		fatal("failed to upload files %s", err)
