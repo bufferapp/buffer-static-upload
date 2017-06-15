@@ -24,6 +24,16 @@ import (
 
 var defaultS3Bucket = "static.buffer.com"
 
+func fatal(format string, a ...interface{}) {
+	s := "Error: " + format + "\n"
+	if a != nil {
+		fmt.Printf(s, a)
+	} else {
+		fmt.Print(s)
+	}
+	os.Exit(1)
+}
+
 // GetFileMd5 returns a checksum for a given file
 func GetFileMd5(file *os.File) (string, error) {
 	var fileHash string
@@ -82,8 +92,7 @@ func GetS3Uploader() (*s3manager.Uploader, error) {
 
 	_, err := creds.Get()
 	if err != nil {
-		fmt.Printf("failed to load AWS credentials %s", err)
-		return uploader, err
+		fatal("failed to load AWS credentials %s", err)
 	}
 
 	uploader = s3manager.NewUploader(sess)
@@ -152,29 +161,28 @@ func main() {
 	flag.Parse()
 
 	if *directory == "" && *s3Bucket == defaultS3Bucket {
-		fmt.Println("To use the default bucket you need to specify an upload directory (-dir)")
-		os.Exit(1)
+		fatal("To use the default bucket you need to specify an upload directory (-dir)")
 	}
 
 	files, err := GetFilesFromGlobsList(*filesArg)
 	if err != nil {
-		fmt.Printf("failed to get files %s", err)
+		fatal("failed to get files %s", err)
 	}
 	fmt.Printf("Found %d files to upload and version:\n", len(files))
 
 	fileVersions, err := VersionAndUploadFiles(*s3Bucket, *directory, files)
 	if err != nil {
-		fmt.Printf("failed to upload files %s", err)
+		fatal("failed to upload files %s", err)
 	}
 
 	output, err := json.MarshalIndent(fileVersions, "", "  ")
 	if err != nil {
-		fmt.Printf("failed to generate versions json file %s", err)
+		fatal("failed to generate versions json file %s", err)
 	}
 
 	err = ioutil.WriteFile(*outputFilename, output, 0644)
 	if err != nil {
-		fmt.Printf("failed to write versions json file %s", err)
+		fatal("failed to write versions json file %s", err)
 	}
 
 	fmt.Printf("\nSuccessfully uploaded static assets and generated %s\n", *outputFilename)
