@@ -197,6 +197,7 @@ func main() {
 		fatal("To use the default bucket you need to specify an upload directory (-dir)")
 	}
 
+	start := time.Now()
 	files, err := GetFilesFromGlobsList(*filesArg)
 	if err != nil {
 		fatal("failed to get files %s", err)
@@ -219,5 +220,10 @@ func main() {
 		fatal("failed to write versions json file %s", err)
 	}
 
-	fmt.Printf("\nSuccessfully uploaded static assets and generated %s\n", *outputFilename)
+	elapsed := time.Since(start)
+	fmt.Printf(
+		"\nSuccessfully uploaded static assets and generated %s in %s\n",
+		*outputFilename,
+		elapsed,
+	)
 }
