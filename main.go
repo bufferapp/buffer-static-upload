@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"crypto/md5"
+	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
@@ -190,11 +192,30 @@ func VersionAndUploadFiles(
 	return fileVersions, nil
 }
 
+// FormatManifest returns the file version manifest in json or csv format
+func FormatManifest(fileVersions map[string]string, format string) ([]byte, error) {
+	if format == "json" {
+		return json.MarshalIndent(fileVersions, "", "  ")
+	}
+	if format == "csv" {
+		b := &bytes.Buffer{}
+		wr := csv.NewWriter(b)
+		for filename, uri := range fileVersions {
+			row := []string{filename, uri}
+			wr.Write(row)
+		}
+		wr.Flush()
+		return b.Bytes(), nil
+	}
+	return nil, nil
+}
+
 func main() {
 	s3Bucket := flag.String("bucket", defaultS3Bucket, "the s3 bucket to upload to")
 	directory := flag.String("dir", "", "required, the directory to upload files to in the bucket")
 	filesArg := flag.String("files", "", "the path to the files you'd like to upload, ex. \"public/**/.*js,public/style.css\"")
 	outputFilename := flag.String("o", "staticAssets.json", "the filename for the versions manifest")
+	format := flag.String("format", "json", "format of the output [json,csv]")
 	dryRun := flag.Bool("dry-run", false, "print the output only, skip file uploads and manifest creation")
 	printVersion := flag.Bool("v", false, "print the current buffer-static-upload version")
 	flag.Parse()
@@ -221,15 +242,15 @@ func main() {
 		fatal("failed to upload files %s", err)
 	}
 
-	output, err := json.MarshalIndent(fileVersions, "", "  ")
+	output, err := FormatManifest(fileVersions, *format)
 	if err != nil {
-		fatal("failed to generate versions json file %s", err)
+		fatal("failed to format versions manifest file %s", err)
 	}
 
 	if !*dryRun {
 		err = ioutil.WriteFile(*outputFilename, output, 0644)
 		if err != nil {
-			fatal("failed to write versions json file %s", err)
+			fatal("failed to write versions mainifest file %s", err)
 		}
 	}
 
