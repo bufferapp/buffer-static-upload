@@ -124,32 +124,21 @@ func GetFileURL(filename string, bucket string) string {
 	return "https://s3.amazonaws.com" + path.Join("/", filename)
 }
 
-// UploadFile ensures a given file is uploaded to the s3 bucket and returns
-// the filename
-func UploadFile(file *os.File, filename string, bucket string) (fileURL string, err error) {
+// UploadFile uploads a given file to the s3 bucket
+func UploadFile(file *os.File, filename string, bucket string) (err error) {
 	mimeType := GetFileMimeType(filename)
-
-	var action string
-	if !HasPreviousUpload(svc, bucket, filename) {
-		_, err := uploader.Upload(&s3manager.UploadInput{
-			Bucket:       aws.String(bucket),
-			Key:          aws.String(filename),
-			ContentType:  aws.String(mimeType),
-			CacheControl: aws.String("public, max-age=31520626"),
-			Expires:      aws.Time(time.Now().AddDate(10, 0, 0)),
-			Body:         file,
-		})
-		if err != nil {
-			return fileURL, err
-		}
-		action = "Uploaded"
-	} else {
-		action = "Skipped"
+	_, err = uploader.Upload(&s3manager.UploadInput{
+		Bucket:       aws.String(bucket),
+		Key:          aws.String(filename),
+		ContentType:  aws.String(mimeType),
+		CacheControl: aws.String("public, max-age=31520626"),
+		Expires:      aws.Time(time.Now().AddDate(10, 0, 0)),
+		Body:         file,
+	})
+	if err != nil {
+		return err
 	}
-
-	fileURL = GetFileURL(filename, bucket)
-	fmt.Printf("%-10s %s\n", action, fileURL)
-	return fileURL, nil
+	return nil
 }
 
 // VersionAndUploadFiles will verion files and upload them to s3 and return
@@ -158,6 +147,7 @@ func VersionAndUploadFiles(
 	bucket string,
 	directory string,
 	filenames []string,
+	dryRun bool,
 ) (map[string]string, error) {
 	fileVersions := map[string]string{}
 
@@ -178,11 +168,22 @@ func VersionAndUploadFiles(
 			uploadFilename = GetVersionedFilename(filename, checksum)
 		}
 		bucketFilename := path.Join(directory, uploadFilename)
+		fileURL := GetFileURL(filename, bucket)
 
-		fileURL, err := UploadFile(file, bucketFilename, bucket)
-		if err != nil {
-			return fileVersions, err
+		shouldUpload := !HasPreviousUpload(svc, bucket, bucketFilename)
+		if shouldUpload && !dryRun {
+			err := UploadFile(file, bucketFilename, bucket)
+			if err != nil {
+				return fileVersions, err
+			}
 		}
+
+		if shouldUpload {
+			fmt.Printf("%-10s %s\n", "Uploaded", fileURL)
+		} else {
+			fmt.Printf("%-10s %s\n", "Skipped", fileURL)
+		}
+
 		fileVersions[filename] = fileURL
 	}
 
@@ -193,7 +194,8 @@ func main() {
 	s3Bucket := flag.String("bucket", defaultS3Bucket, "the s3 bucket to upload to")
 	directory := flag.String("dir", "", "required, the directory to upload files to in the bucket")
 	filesArg := flag.String("files", "", "the path to the files you'd like to upload, ex. \"public/**/.*js,public/style.css\"")
-	outputFilename := flag.String("o", "staticAssets.json", "the json file you'd like your generate")
+	outputFilename := flag.String("o", "staticAssets.json", "the filename for the versions manifest")
+	dryRun := flag.Bool("dry-run", false, "print the output only, skip file uploads and manifest creation")
 	printVersion := flag.Bool("v", false, "print the current buffer-static-upload version")
 	flag.Parse()
 
@@ -214,7 +216,7 @@ func main() {
 	fmt.Printf("Found %d files to upload and version:\n", len(files))
 
 	SetupS3Uploader()
-	fileVersions, err := VersionAndUploadFiles(*s3Bucket, *directory, files)
+	fileVersions, err := VersionAndUploadFiles(*s3Bucket, *directory, files, *dryRun)
 	if err != nil {
 		fatal("failed to upload files %s", err)
 	}
@@ -224,15 +226,22 @@ func main() {
 		fatal("failed to generate versions json file %s", err)
 	}
 
-	err = ioutil.WriteFile(*outputFilename, output, 0644)
-	if err != nil {
-		fatal("failed to write versions json file %s", err)
+	if !*dryRun {
+		err = ioutil.WriteFile(*outputFilename, output, 0644)
+		if err != nil {
+			fatal("failed to write versions json file %s", err)
+		}
 	}
 
 	elapsed := time.Since(start)
-	fmt.Printf(
-		"\nSuccessfully uploaded static assets and generated %s in %s\n",
-		*outputFilename,
-		elapsed,
-	)
+	if *dryRun {
+		fmt.Printf("\nCompleted dry run in %s\n", elapsed)
+	} else {
+
+		fmt.Printf(
+			"\nSuccessfully uploaded static assets and generated %s in %s\n",
+			*outputFilename,
+			elapsed,
+		)
+	}
 }
