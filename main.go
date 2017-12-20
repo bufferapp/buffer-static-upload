@@ -23,6 +23,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
+// VERSION is the current version
+const VERSION = "0.1.0"
+
 var defaultS3Bucket = "static.buffer.com"
 var uploader *s3manager.Uploader
 var svc *s3.S3
@@ -191,7 +194,13 @@ func main() {
 	directory := flag.String("dir", "", "required, the directory to upload files to in the bucket")
 	filesArg := flag.String("files", "", "the path to the files you'd like to upload, ex. \"public/**/.*js,public/style.css\"")
 	outputFilename := flag.String("o", "staticAssets.json", "the json file you'd like your generate")
+	printVersion := flag.Bool("v", false, "print the current buffer-static-upload version")
 	flag.Parse()
+
+	if *printVersion {
+		fmt.Printf("%s\n", VERSION)
+		os.Exit(0)
+	}
 
 	if *directory == "" && *s3Bucket == defaultS3Bucket {
 		fatal("To use the default bucket you need to specify an upload directory (-dir)")
