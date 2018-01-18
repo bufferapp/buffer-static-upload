@@ -13,13 +13,18 @@ Ensure your AWS credentials environment variables are set (`AWS_ACCESS_KEY_ID`,
 $ buffer-static-upload -h
 Usage of buffer-static-upload:
   -bucket string
-    	the s3 bucket to upload to (default "static.buffer.com")
+      the s3 bucket to upload to (default "static.buffer.com")
   -dir string
-    	required, the directory to upload files to in the bucket
+      required, the directory to upload files to in the bucket
+  -dry-run
+      print the output only, skip file uploads and manifest creation
   -files string
-    	the path to the files you'd like to upload, ex. "public/**/.*js,public/style.css"
+      the path to the files you'd like to upload, ex. "public/**/.*js,public/style.css"
+  -format string
+      format of the output [json,csv] (default "json")
   -o string
-    	the json file you'd like your generate (default "staticAssets.json")
+      the filename for the versions manifest (default "staticAssets.json")
+  -v	print the current buffer-static-upload version
 ```
 
 For example, you can use glob patterns to match multiple sets of files:
