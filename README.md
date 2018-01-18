@@ -12,6 +12,16 @@ contents as to allow for cache-busting.
 Images and other files are *not* versioned to allow for maximum caching and due
 to their contents not changing very often like `.css` and `.js` files do.
 
+## Install
+
+A pre-compiled binary is available for download for both Linux and macOS.
+Replace the version (ex. `0.2.0`) in the URL below for the version you require:
+
+```
+curl -L https://github.com/bufferapp/buffer-static-upload/releases/download/0.2.0/buffer-static-upload-`uname -s` > /usr/local/bin/buffer-static-upload
+chmod +x /usr/local/bin/buffer-static-upload
+```
+
 ## Usage
 
 Ensure your AWS credentials environment variables are set (`AWS_ACCESS_KEY_ID`,
