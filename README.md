@@ -65,3 +65,33 @@ This will generate a `staticAssets.json` file in this directory like this:
 *Note* - The default bucket is used by multiple teams, so if you use that you
 must specify a directory to use for your project as not to create unnecessary
 collisions.
+
+### Development
+
+To work on this project you'll need [Golang](https://golang.org/dl/) and
+the [Glide package manager](https://glide.sh/) installed. You should have
+your `GOPATH` environment variable set and this repo should be cloned within
+your `$GOPATH/src/github.com/bufferapp` directory.
+
+To install the dependencies, run:
+
+```
+glide install
+```
+
+To test the script run:
+
+```
+go run main.go <your cli arguments here>
+```
+
+When distributing a new release version, run this script to generate the
+binaries for Linux and Mac:
+
+```
+./build.sh
+```
+
+### License
+
+MIT
