@@ -1,2 +1,5 @@
 vendor
 debug
+dist
+
+buffer-static-upload
