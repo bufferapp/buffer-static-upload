@@ -26,7 +26,7 @@ import (
 )
 
 // VERSION is the current version
-const VERSION = "0.2.0"
+const VERSION = "0.2.1"
 
 var defaultS3Bucket = "static.buffer.com"
 var uploader *s3manager.Uploader
