@@ -118,12 +118,12 @@ func HasPreviousUpload(svc *s3.S3, bucket string, filename string) bool {
 }
 
 // GetFileURL returns the final url of the file
-func GetFileURL(filename string, bucket string) string {
+func GetFileURL(bucket string, bucketFilename string) string {
 	// the static.buffer.com bucket has a domain alias
 	if bucket == defaultS3Bucket {
-		return "https://" + path.Join(bucket, filename)
+		return "https://" + path.Join(bucket, bucketFilename)
 	}
-	return "https://s3.amazonaws.com" + path.Join("/", filename)
+	return "https://s3.amazonaws.com" + path.Join("/", bucket, "/", bucketFilename)
 }
 
 // UploadFile uploads a given file to the s3 bucket
@@ -153,6 +153,8 @@ func VersionAndUploadFiles(
 ) (map[string]string, error) {
 	fileVersions := map[string]string{}
 
+	fmt.Printf("Uploading to %s/%s\n", bucket, directory)
+
 	for _, filename := range filenames {
 		file, err := os.Open(filename)
 		if err != nil {
@@ -170,7 +172,7 @@ func VersionAndUploadFiles(
 			uploadFilename = GetVersionedFilename(filename, checksum)
 		}
 		bucketFilename := path.Join(directory, uploadFilename)
-		fileURL := GetFileURL(filename, bucket)
+		fileURL := GetFileURL(bucket, bucketFilename)
 
 		shouldUpload := !HasPreviousUpload(svc, bucket, bucketFilename)
 		if shouldUpload && !dryRun {
@@ -181,9 +183,9 @@ func VersionAndUploadFiles(
 		}
 
 		if shouldUpload {
-			fmt.Printf("%-10s %s\n", "Uploaded", fileURL)
+			fmt.Printf("%-10s %s\n", "Uploaded", filename)
 		} else {
-			fmt.Printf("%-10s %s\n", "Skipped", fileURL)
+			fmt.Printf("%-10s %s\n", "Skipped", filename)
 		}
 
 		fileVersions[filename] = fileURL
