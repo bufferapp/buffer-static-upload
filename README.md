@@ -1,5 +1,7 @@
 # buffer-static-upload
 
+[![Build Status](https://travis-ci.com/bufferapp/buffer-static-upload.svg?branch=master)](https://travis-ci.com/bufferapp/buffer-static-upload)
+
 A straightforward static asset uploader which versions files by their contents
 and generates a json file for your application to read the uploaded file
 locations from.
