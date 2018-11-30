@@ -174,7 +174,7 @@ func VersionAndUploadFiles(
 		bucketFilename := path.Join(directory, uploadFilename)
 		fileURL := GetFileURL(bucket, bucketFilename)
 
-		shouldUpload := !HasPreviousUpload(svc, bucket, bucketFilename)
+		shouldUpload := ext == ".map" || !HasPreviousUpload(svc, bucket, bucketFilename)
 		if shouldUpload && !dryRun {
 			err := UploadFile(file, bucketFilename, bucket)
 			if err != nil {
