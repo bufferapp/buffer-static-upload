@@ -1,6 +1,47 @@
-hash: 7a6c0cb5f1bdb57d6eeec927bb218fea1867a05a4007c113b09b15e8edf6cc89
-updated: 2017-05-24T14:46:15.136419047-07:00
+hash: e1da4bc94060e653a11f1a2db9e10096e968fa1c5bf09db88db8c9303961843d
+updated: 2019-01-22T11:49:24.767164+01:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: e8177d9867544fa4677f40ceb470e60b6f3573ae
+  version: 96358b8282b1a3aa66836d2f2fe66216cc419668
+  subpackages:
+  - aws
+  - aws/awserr
+  - aws/awsutil
+  - aws/client
+  - aws/client/metadata
+  - aws/corehandlers
+  - aws/credentials
+  - aws/credentials/ec2rolecreds
+  - aws/credentials/endpointcreds
+  - aws/credentials/stscreds
+  - aws/defaults
+  - aws/ec2metadata
+  - aws/endpoints
+  - aws/request
+  - aws/session
+  - aws/signer/v4
+  - internal/shareddefaults
+  - private/protocol
+  - private/protocol/query
+  - private/protocol/query/queryutil
+  - private/protocol/rest
+  - private/protocol/restxml
+  - private/protocol/xml/xmlutil
+  - service/s3
+  - service/s3/s3iface
+  - service/s3/s3manager
+  - service/sts
+- name: github.com/go-ini/ini
+  version: 6ed8d5f64cd79a498d1f3fab5880cc376ce41bbe
+- name: github.com/jmespath/go-jmespath
+  version: c2b33e8439af944379acbdd9c3a5fe0bc44bd8a5
+- name: github.com/spf13/afero
+  version: a5d6946387efe7d64d09dcba68cdd523dc1273a3
+  subpackages:
+  - mem
+- name: golang.org/x/text
+  version: f21a4dfb5e38f5895301dc265a8def02365cc3d0
+  subpackages:
+  - transform
+  - unicode/norm
 testImports: []

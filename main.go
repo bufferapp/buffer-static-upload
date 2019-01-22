@@ -43,7 +43,7 @@ func fatal(format string, a ...interface{}) {
 }
 
 // GetFileMd5 returns a checksum for a given file
-func GetFileMd5(file *os.File) (string, error) {
+func GetFileMd5(file io.Reader) (string, error) {
 	var fileHash string
 	hash := md5.New()
 	if _, err := io.Copy(hash, file); err != nil {
@@ -143,6 +143,23 @@ func UploadFile(file *os.File, filename string, bucket string) (err error) {
 	return nil
 }
 
+func ShouldVersionFile(filename string, skipVersioning bool) (bool) {
+	ext := filepath.Ext(filename)
+	return !skipVersioning && (ext == ".js" || ext == ".css")
+}
+
+func GetUploadFilename(file io.Reader, filename string, skipVersioning bool) (string, error) {
+	uploadFilename := filename
+	if ShouldVersionFile(filename, skipVersioning) {
+		checksum, errMd5 := GetFileMd5(file)
+		if errMd5 != nil {
+			return "", errMd5
+		}
+		uploadFilename = GetVersionedFilename(filename, checksum)
+	}
+	return uploadFilename, nil
+}
+
 // VersionAndUploadFiles will verion files and upload them to s3 and return
 // a map of filenames and their version hashes
 func VersionAndUploadFiles(
@@ -150,6 +167,7 @@ func VersionAndUploadFiles(
 	directory string,
 	filenames []string,
 	dryRun bool,
+	skipVersioning bool,
 ) (map[string]string, error) {
 	fileVersions := map[string]string{}
 
@@ -162,14 +180,9 @@ func VersionAndUploadFiles(
 		}
 		defer file.Close()
 
-		ext := filepath.Ext(filename)
-		uploadFilename := filename
-		if ext == ".js" || ext == ".css" {
-			checksum, errMd5 := GetFileMd5(file)
-			if errMd5 != nil {
-				return fileVersions, errMd5
-			}
-			uploadFilename = GetVersionedFilename(filename, checksum)
+		uploadFilename, err := GetUploadFilename(file, filename, skipVersioning)
+		if err != nil {
+			return fileVersions, err
 		}
 		bucketFilename := path.Join(directory, uploadFilename)
 		fileURL := GetFileURL(bucket, bucketFilename)
@@ -220,6 +233,7 @@ func main() {
 	format := flag.String("format", "json", "format of the output [json,csv]")
 	dryRun := flag.Bool("dry-run", false, "print the output only, skip file uploads and manifest creation")
 	printVersion := flag.Bool("v", false, "print the current buffer-static-upload version")
+	skipVersioning := flag.Bool("skip-versioning", false, "skip versioning uploaded files")
 	flag.Parse()
 
 	if *printVersion {
@@ -239,7 +253,7 @@ func main() {
 	fmt.Printf("Found %d files to upload and version:\n", len(files))
 
 	SetupS3Uploader()
-	fileVersions, err := VersionAndUploadFiles(*s3Bucket, *directory, files, *dryRun)
+	fileVersions, err := VersionAndUploadFiles(*s3Bucket, *directory, files, *dryRun, *skipVersioning)
 	if err != nil {
 		fatal("failed to upload files %s", err)
 	}
