@@ -9,7 +9,8 @@ locations from.
 ## Versioned files and Images
 
 `.js` and `.css` files are versioned during upload using a hash of the file's
-contents as to allow for cache-busting.
+contents as to allow for cache-busting. You can skip the automatic versioning
+by using the `-skip-versioning` flag.
 
 Images and other files are *not* versioned to allow for maximum caching and due
 to their contents not changing very often like `.css` and `.js` files do.
@@ -31,19 +32,21 @@ Ensure your AWS credentials environment variables are set (`AWS_ACCESS_KEY_ID`,
 
 ```
 $ buffer-static-upload -h
-Usage of buffer-static-upload:
+Usage of ./buffer-static-upload:
   -bucket string
-      the s3 bucket to upload to (default "static.buffer.com")
+    	the s3 bucket to upload to (default "static.buffer.com")
   -dir string
-      required, the directory to upload files to in the bucket
+    	required, the directory to upload files to in the bucket
   -dry-run
-      print the output only, skip file uploads and manifest creation
+    	print the output only, skip file uploads and manifest creation
   -files string
-      the path to the files you'd like to upload, ex. "public/**/.*js,public/style.css"
+    	the path to the files you'd like to upload, ex. "public/**/.*js,public/style.css"
   -format string
-      format of the output [json,csv] (default "json")
+    	format of the output [json,csv] (default "json")
   -o string
-      the filename for the versions manifest (default "staticAssets.json")
+    	the filename for the versions manifest (default "staticAssets.json")
+  -skip-versioning
+    	skip versioning uploaded files
   -v	print the current buffer-static-upload version
 ```
 
