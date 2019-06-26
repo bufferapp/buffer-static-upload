@@ -1,9 +1,10 @@
 package main
 
 import (
-	"os"
 	"fmt"
+	"os"
 	"testing"
+
 	"github.com/spf13/afero"
 )
 
@@ -25,22 +26,18 @@ func TestGetFileURL(t *testing.T) {
 	}
 }
 
-
 func TestShouldVersionFile(t *testing.T) {
 	tests := []struct {
-		filename		string
-		skipVersioning bool
-		expected       bool
-	} {
-		{ "bundle.js", false, true },
-		{ "bundle.js", true, false },
-		{ "assets.css", false, true },
-		{ "assets.css", true, false },
-		{ "another.file", false, false },
+		filename string
+		expected bool
+	}{
+		{"bundle.js", true},
+		{"assets.css", true},
+		{"another.file", false},
 	}
 
 	for _, test := range tests {
-		actual := ShouldVersionFile(test.filename, test.skipVersioning)
+		actual := ShouldVersionFile(test.filename)
 		if actual != test.expected {
 			t.Errorf("ShouldVersionFile result was incorrect, got %t, expected %t for filename %s", actual, test.expected, test.filename)
 		}
@@ -53,13 +50,13 @@ func TestGetUploadFilename(t *testing.T) {
 	file, _ := AppFs.OpenFile(filename, os.O_CREATE, 0600)
 	file.WriteString("some JS content")
 	tests := []struct {
-		file afero.File
-		filename string
+		file           afero.File
+		filename       string
 		skipVersioning bool
-		expected string
-	} {
-		{ file, filename, false, "bundle.d41d8cd98f00b204e9800998ecf8427e.js" },
-		{ file, filename, true, "bundle.js" },
+		expected       string
+	}{
+		{file, filename, false, "bundle.d41d8cd98f00b204e9800998ecf8427e.js"},
+		{file, filename, true, "bundle.js"},
 	}
 
 	for _, test := range tests {
