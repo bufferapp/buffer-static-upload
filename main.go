@@ -160,6 +160,14 @@ func GetUploadFilename(file io.Reader, filename string, skipVersioning bool) (st
 	return uploadFilename, nil
 }
 
+func IsDirectory(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+	return info.IsDir(), err
+}
+
 // VersionAndUploadFiles will verion files and upload them to s3 and return
 // a map of filenames and their version hashes
 func VersionAndUploadFiles(
@@ -174,6 +182,10 @@ func VersionAndUploadFiles(
 	fmt.Printf("Uploading to %s/%s\n", bucket, directory)
 
 	for _, filename := range filenames {
+		isDir, err := IsDirectory(filename)
+		if isDir || err != nil {
+			continue
+		}
 		file, err := os.Open(filename)
 		if err != nil {
 			return fileVersions, err
