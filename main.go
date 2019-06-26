@@ -250,7 +250,11 @@ func main() {
 	if err != nil {
 		fatal("failed to get files %s", err)
 	}
-	fmt.Printf("Found %d files to upload and version:\n", len(files))
+	append := " and version"
+	if *skipVersioning == true {
+		append = ""
+	}
+	fmt.Printf("Found %d files to upload%s:\n", len(files), append)
 
 	SetupS3Uploader()
 	fileVersions, err := VersionAndUploadFiles(*s3Bucket, *directory, files, *dryRun, *skipVersioning)
