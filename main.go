@@ -143,14 +143,14 @@ func UploadFile(file *os.File, filename string, bucket string) (err error) {
 	return nil
 }
 
-func ShouldVersionFile(filename string, skipVersioning bool) (bool) {
+func ShouldVersionFile(filename string) bool {
 	ext := filepath.Ext(filename)
-	return !skipVersioning && (ext == ".js" || ext == ".css")
+	return ext == ".js" || ext == ".css"
 }
 
 func GetUploadFilename(file io.Reader, filename string, skipVersioning bool) (string, error) {
 	uploadFilename := filename
-	if ShouldVersionFile(filename, skipVersioning) {
+	if !skipVersioning && ShouldVersionFile(filename) {
 		checksum, errMd5 := GetFileMd5(file)
 		if errMd5 != nil {
 			return "", errMd5
