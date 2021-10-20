@@ -26,7 +26,7 @@ import (
 )
 
 // VERSION is the current version
-const VERSION = "0.2.1"
+const VERSION = "0.4.0"
 
 var defaultS3Bucket = "static.buffer.com"
 var uploader *s3manager.Uploader
@@ -190,7 +190,6 @@ func VersionAndUploadFiles(
 		if err != nil {
 			return fileVersions, err
 		}
-		defer file.Close()
 
 		uploadFilename, err := GetUploadFilename(file, filename, skipVersioning)
 		if err != nil {
@@ -214,6 +213,7 @@ func VersionAndUploadFiles(
 		}
 
 		fileVersions[filename] = fileURL
+		file.Close()
 	}
 
 	return fileVersions, nil
